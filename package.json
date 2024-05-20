@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "ace-builds": "^1.33.2",
+    "axios": "^1.7.0",
+    "codemirror": "^5.65.16",
+    "react-ace": "^11.0.1",
+    "react-codemirror2": "^8.0.0",
+    "react-router-dom": "^6.23.1",
+    "socket.io-client": "^4.7.5"
+  }
+}
