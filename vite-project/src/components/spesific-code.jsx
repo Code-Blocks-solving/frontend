@@ -1,44 +1,48 @@
-import { useEffect, useState, useRef  } from 'react'
+import { useEffect, useState } from 'react'
 import codeService from "../services/code-block-service"
-import CodeBlock from './code-block'
-import { useNavigate } from 'react-router-dom'
+
 import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 
 import AceEditor from "react-ace";
+import axios from 'axios';
 
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/theme-monokai";
 
 const socket = io('http://localhost:3000');
-export let PostIdEdit;
 
 function SpesificCode() {
-
     const [message, setMessage] = useState('');
 
     const CodeIdDetails = useParams().id;
     const [isFirstClient, setIsFirstClient] = useState(false);
-    //const [code, setCode] = useState({})
     const [code, setCode] = useState({
         title: '',
         code: '',
         _id: ''
     });
     const [editableCode, setEditableCode] = useState(code.code);
-    const [error] = useState()
+    const [error] = useState();
 
     useEffect(() => {
-        socket.on('firstClientId', (id) => {
-            // Check if this client is the first client
-            setIsFirstClient(socket.id === id);
+        socket.on('firstClientId', (id) => {  
+
         });
         
         return () => {
             socket.off('firstClientId');
         };
-    }, []);
+    }, [socket,isFirstClient]);
+     
+    useEffect(() => {
+        const checkFirstClient = async () => {
+          const res = await axios.get('http://localhost:3000/firstClientCheck');
+          setIsFirstClient(res.data.isFirstClient);
+        };
     
+        checkFirstClient();
+      }, []);
 
     useEffect(() => {
         setEditableCode(code.code);
@@ -67,8 +71,6 @@ function SpesificCode() {
                  }
              } catch (err) {
                  console.log(err);
-                 //if (err instanceof CanceledError) return;
-                 //setError(err.message);
              }
          };
          fetchData();
@@ -89,15 +91,11 @@ function SpesificCode() {
         };
     }, [code]);
 
-    // const handleCodeChange = (e) => {
-    //     const newCode = e.target.value;
-    //     setEditableCode(newCode);
-    //     socket.emit('codeUpdate', { id: code._id, code: newCode });
-    // };
-
-    function handleCodeChange1(value) {
-        setEditableCode(value);
-        socket.emit('codeUpdate', { id: code._id, code: value });
+  
+    function handleCodeChange(value) {
+            setEditableCode(value);
+            socket.emit('codeUpdate', { id: code._id, code: value });
+        
     }
 
         return (
@@ -106,7 +104,7 @@ function SpesificCode() {
                 <div>
                     {error && <p className='text-danger'>{error}</p>}
                 </div>
-
+                
             <div className="p-4">
             { code &&(
          <div key={code._id}>
@@ -119,12 +117,6 @@ function SpesificCode() {
     boxShadow: '0 2px 5px rgba(0, 0, 0, 0.15)'
 }}>
     <h1 >Title: {code.title}</h1>
-    {/* <textarea 
-    style={{ width: '100%', margin: '0' }} 
-    value={editableCode} 
-    onChange={handleCodeChange}
-    disabled={isFirstClient}
-/> */}
 <div style={{
     display: 'flex',
     justifyContent: 'center',
@@ -141,21 +133,25 @@ function SpesificCode() {
     backgroundColor: '#f8f8f8',
     paddingTop: '50px'
 }}>
+    
+    { (
     <AceEditor
         mode="javascript"
         theme="monokai"
         name="UNIQUE_ID_OF_DIV"
         editorProps={{ $blockScrolling: true }}
         value={editableCode}
+        readOnly={isFirstClient }
         onChange={(newValue) => {
-            handleCodeChange1(newValue);
+            if (!isFirstClient) {
+                handleCodeChange(newValue);
+            }
             if (newValue.trim() === code.result.trim()) {
                 setMessage('Good job! 😊');
             } else {
                 setMessage('');
             }
         }}
-        readOnly={isFirstClient}
         style={{
             width: '600px',
             height: '300px',
@@ -163,9 +159,11 @@ function SpesificCode() {
             boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)'
         }}
     />
- {isFirstClient && <div style={{
+
+)}
+ {isFirstClient&& <div style={{
     position: 'absolute',
-    top: '100%',
+    top: '75%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
     fontSize: '1.5em',
@@ -175,7 +173,7 @@ function SpesificCode() {
     borderRadius: '10px',
     padding: '20px',
     backgroundColor: 'white'
-}}>You cant edit this code.</div>}
+}}>Mentors cant edit this code.</div>}
 {message && <div style={{
     position: 'absolute',
     top: '100%',
@@ -191,11 +189,8 @@ function SpesificCode() {
 }}>{message}</div>}
 </div>
 
-
 </div>
 
-
-    {/* <button onClick={() => handleCodeChange(code._id, editableCode)}>Save Changes</button> */}
 </div>
           
     </div>
@@ -203,8 +198,10 @@ function SpesificCode() {
             </div>
           
            </>
-        )
-        
+        )    
 }
-
 export default SpesificCode
+
+
+
+
